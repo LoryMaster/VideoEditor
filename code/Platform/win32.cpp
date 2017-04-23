@@ -380,7 +380,7 @@ internal LRESULT CALLBACK WindowProc(HWND Window, UINT Message, WPARAM wParam, L
 				if (SetCapture(Window) == NULL)
 				{
 					DWORD Error = GetLastError();
-					LogErrori("When Setting Mouse Capture in WindowProc got error: ", Error);
+					LogErrori("When Setting Mouse Capture in WindowProc got error: ", Error); OutputDebugStringA("\n");
 				}
 			}
 			else
@@ -389,7 +389,7 @@ internal LRESULT CALLBACK WindowProc(HWND Window, UINT Message, WPARAM wParam, L
 				if (ReleaseCapture() == NULL)
 				{
 					DWORD Error = GetLastError();
-					LogErrori("When Setting Mouse Capture in WindowProc got error: ", Error);
+					LogErrori("When Setting Mouse Capture in WindowProc got error: ", Error); OutputDebugStringA("\n");
 				}
 			}
 			break;
