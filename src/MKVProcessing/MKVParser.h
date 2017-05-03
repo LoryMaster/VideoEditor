@@ -135,14 +135,6 @@ enum TrackType
 	TRACK_CONTROL	= 0x20
 };
 
-enum TrackFlags
-{
-	TRACK_ENABLED	= 0x01,
-	TRACK_DEFAULT	= 0x02,
-	TRACK_FORCED	= 0x04,
-	TRACK_LACING	= 0x08
-};
-
 #pragma region TrackTranslateIDs
 #define TRACKTRANSLATEMASTER		0x2466
 #define	TRACKTRANSLATEEDITIONUID	0xFC66
@@ -242,6 +234,8 @@ struct Colour
 #define VIDEODISPLAYUNIT		0xB254
 #define VIDEOASPECTRATIOTYPE	0xB354
 #define VIDEOCOLOURSPACE		0x24B52E
+	#define VIDEOCOLOURSPACE16	0xB52E
+	#define VIDEOCOLOURSPACE24	0x24
 #pragma endregion
 
 struct Video
@@ -287,6 +281,16 @@ struct Audio
 	u32			BitDepth;
 };
 
+#pragma region TrackOperationIDs
+#define TRACKOPMASTER				0xE2
+#define TRACKCOMBINEDPLANESMASTER	0xE3
+#define TRACKPLANEMASTER			0xE4
+#define TRACKPLANEUID				0xE5
+#define TRACKPLANETYPE				0xE6
+#define TRACKJOINBLOCKSMASTER		0xE9
+#define TRACKJOINUID				0xED
+#pragma endregion
+
 struct TrackPlane
 {
 	u32			size;
@@ -323,6 +327,24 @@ enum EncodingField
 	FIELD_NEXTENCODING		= 0x04
 };
 
+#pragma region ContentEncodingIDs
+#define CONTENTENCODINGSMASTER			0x806D
+#define CONTENTENCODINGMASTER			0x4062
+#define CONTENTENCODINGORDER			0x3150
+#define CONTENTENCODINGSCOPE			0x3250
+#define CONTENTENCODINGTYPE				0x3350
+#define CONTENTENCODINGCOMPMASTER		0x3450
+#define CONTENTENCODINGCOMPALGO			0x5442
+#define CONTENTENCODINGCOMSETTING		0x5542
+#define CONTENTENCODINGENCRYPTIONMASTER	0x3550
+#define CONTENTENCODINGENCALGO			0xE147
+#define CONTENTENCODINGENCKEYID			0xE247
+#define CONTENTENCODINGSIGNATURE		0xE347
+#define CONTENTENCODINGSIGKEYID			0xE447
+#define CONTENTENCODINGSIGALGO			0xE547
+#define CONTENTENCODINGSIGHASHALGO		0xE647
+#pragma endregion
+
 struct ContentCompression
 {
 	u32			size;
@@ -356,34 +378,46 @@ struct Encoding
 struct ContentEncodings
 {
 	u32			size;
-	Encoding	*Encoding;
+	Encoding	Encoding;
 };
 
 #pragma region TrackIDS
-#define TRACKMASTER				0x6BAE5416
-#define TRACKENTRY				0xAE
-#define TRACKNUMBER				0xD7
-#define TRACKUID				0xC573
-#define TRACKTYPE				0x83
-#define TRACKFLAGENABLED		0xB9
-#define TRACKFLAGDEFAULT		0x88
-#define TRACKFLAGFORCED			0xAA55
-#define TRACKFLAGLACING			0x9C
-#define TRACKMINCACHE			0xE76D
-#define TRACKMAXCACHE			0xF86D
-#define TRACKDEFDURATION		0x83E323
-#define TRACKDEFDECODEDFIELDDUR	0x7A4E23
-#define TRACKMAXBLOCKADDITIONID	0xEE55
-#define TRACKNAME				0x6E53
-#define TRACKLANGUAGE			0x9CB522
-#define TRACKCODECID			0x86
-#define TRACKCODECPRIVATE		0xA263
-#define TRACKCODECNAME			0x888625
-#define TRACKATTACHMENTLINK		0x4674
-#define TRACKCODECDECODEALL		0xAA
-#define TRACKOVERLAY			0xAB6F
-#define TRACKCODECDELAY			0xAA56
-#define TRACKSEEKPREROLL		0xBB56
+#define TRACKMASTER						0x6BAE5416
+#define TRACKENTRYMASTER				0xAE
+#define TRACKNUMBER						0xD7
+#define TRACKUID						0xC573
+#define TRACKTYPE						0x83
+#define TRACKFLAGENABLED				0xB9
+#define TRACKFLAGDEFAULT				0x88
+#define TRACKFLAGFORCED					0xAA55
+#define TRACKFLAGLACING					0x9C
+#define TRACKMINCACHE					0xE76D
+#define TRACKMAXCACHE					0xF86D
+#define TRACKDEFDURATION				0x83E323
+	#define TRACKDEFDURATION16			0xE323
+	#define	TRACKDEFDURATION24			0x83
+
+#define TRACKDEFDECODEDFIELDDUR			0x7A4E23
+	#define TRACKDEFDECODEDFIELDDUR16	0x4E23
+	#define TRACKDEFDECODEDFIELDDUR24	0x7A
+
+#define TRACKMAXBLOCKADDITIONID			0xEE55
+#define TRACKNAME						0x6E53
+#define TRACKLANGUAGE					0x9CB522
+	#define TRACKLANGUAGE16				0xB522
+	#define TRACKLANGUAGE24				0x9C
+
+#define TRACKCODECID					0x86
+#define TRACKCODECPRIVATE				0xA263
+#define TRACKCODECNAME					0x888625
+	#define TRACKCODECNAME16			0x8625
+	#define TRACKCODECNAME24			0x88
+
+#define TRACKATTACHMENTLINK				0x4674
+#define TRACKCODECDECODEALL				0xAA
+#define TRACKOVERLAY					0xAB6F
+#define TRACKCODECDELAY					0xAA56
+#define TRACKSEEKPREROLL				0xBB56
 #pragma endregion
 
 struct TrackEntry
@@ -393,7 +427,10 @@ struct TrackEntry
 	u32					TrackNumber;
 	u64					TrackUID;
 	TrackType			Type;
-	u8					Flags;
+	s8					FlagEnabled;
+	s8					FlagDefault;
+	s8					FlagForced;
+	s8					FlagLacing;
 	u32					MinCache;
 	u32					MaxCache;
 	u64					DefaultDuration;
@@ -403,13 +440,14 @@ struct TrackEntry
 	char				*Language;
 	char				*CodecID;
 	void				*CodecPrivate;
+	u32					CodecPrivateSize;
 	char				*CodecName;
 	u64					AttachmentLink;
 	u8					CodecDecodeAll;
 	u32					TrackOverlay;
 	u64					CodecDelay;
 	u64					SeekPreRoll;
-	TrackTranslate		*TrackTranslate;
+	TrackTranslate		TrackTranslate;
 	Video				Video;
 	Audio				Audio;
 	TrackOperation		Operations;
@@ -422,6 +460,117 @@ struct Track
 	TrackEntry	*Entries;
 };
 
+#pragma region ChapterTrack
+#define CHAPTRACKMASTER	0x8F
+#define CHAPTRACKNUMBER	0x89
+#pragma endregion
+
+struct ChapterTrack
+{
+	u32		size;
+	u32		ChapterTrackNumber[8];
+};
+
+#pragma region ChapterDisplay
+#define CHAPDISPLAYMASTER	0x80
+#define CHAPDISPLAYSTRING	0x85
+#define CHAPDISPLAYLANGUAGE	0x7C43
+#define CHAPDISPLAYCOUNTRY	0x7E43
+#pragma endregion
+
+struct ChapterDisplay
+{
+	u32			size;
+
+	char		*ChapString;
+	char		*ChapLanguage;
+	char		*ChapCountry;
+};
+
+#pragma region ChapterProcess
+#define CHAPPROCMASTER			0x4469
+#define CHAPPROCCODECID			0x5569
+#define CHAPPROCPRIVATE			0x0D45
+#define CHAPPROCCOMMANDMASTER	0x1169
+#define CHAPPROCTIME			0x2269
+#define CHAPPROCDATA			0x3369
+#pragma endregion
+
+struct ProcessCommand
+{
+	u32		size;
+	u64		ProcessTime;
+	void	*ProcessData;
+	u32		ProcessDataSize;
+};
+
+struct ChapterProcess
+{
+	u32				size;
+	u32				ProcessCodecID;
+	void			*ProcessPrivate;
+	u32				ProcessPrivateSize;
+	ProcessCommand	Commands;
+};
+
+#pragma region ChapterAtom
+#define ATOMMASTER			0xB6
+#define ATOMUID				0xC473
+#define ATOMSTRINGUID		0x5456
+#define ATOMTIMESTART		0x91
+#define ATOMTIMEEND			0x92
+#define ATOMFLAGHIDDEN		0x98
+#define ATOMFLAGENABLED		0x9845
+#define ATOMSEGMENTUID		0x676E
+#define ATOMSEGEDITIONUID	0xBC6E
+#define ATOMPHYSICALEQUIV	0xC363
+#pragma endregion
+
+struct ChapterAtom
+{
+	u32				size;
+	u64				ChapterUID;
+	char			*ChapterStringUID;
+	u64				ChapterTimeStart;
+	u64				ChapterTimeEnd;
+	s8				FlagHidden;
+	s8				FlagEnabled;
+	void			*ChapterSegmentUID;
+	u32				ChapterSegmentUIDSize;
+	u64				ChapterSegmentEditionUID;
+	u32				ChapterPhysicalEquiv;
+	ChapterTrack	TrackList;
+	ChapterDisplay	Display;
+	ChapterProcess	Proc;
+};
+
+#pragma region Chapters&EditionIDS
+#define CHAPTERSMASTER		0x70A74310
+#define	EDITIONMASTER		0xB945
+#define	EDITIONUID			0xBC45
+#define	EDITIONFLAGHIDDEN	0xBD45
+#define	EDITIONFLAGDEFAULT	0xDB45
+#define	EDITIONFLAGORDERED	0xDD45
+#pragma endregion
+
+struct EditionEntry
+{
+	u32			size;
+	u64			EditionUID;
+	s8			FlagHidden;
+	s8			FlagDefault;
+	s8			FlagOrdered;
+	ChapterAtom Atoms[4];
+	u32			numAtoms;
+};
+
+struct Chapters
+{
+	u32				size;
+	EditionEntry	Entries[4];
+	u32				numEntries;
+};
+
 struct Segment
 {
 	u32			SegmentSize;
@@ -429,6 +578,7 @@ struct Segment
 	SeekHead	SeekHead;
 	SegmentInfo Info;
 	Track		Tracks;
+	Chapters	Chapters;
 };
 
 struct Matroska
